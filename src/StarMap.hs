@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE Strict #-}
 
@@ -10,7 +10,6 @@ module StarMap
     , buildStarTree, starLookup ) where
 
 import Control.Monad
-import Control.Applicative (liftA2)
 import Data.Word
 import Data.Char
 import Data.Foldable
@@ -18,7 +17,9 @@ import qualified Data.ByteString as B
 import Data.Serialize as S
 import Data.KdMap.Static
 import Linear as L
-import Graphics.ColorSpace
+import Graphics.Color.Adaptation (convert)
+import Graphics.Color.Model
+import Graphics.Pixel
 
 import Util
 
@@ -111,5 +112,5 @@ starLookup starmap intensity saturation vel = let
         -- and brightness of the star.
         val = (* intensity) . min 1
             . exp $ a * (max_brightness - fromIntegral mag) - d2 / (2 * w^(2 :: Int))
-        in toPixelRGB $ PixelHSI hue (saturation * sat) val
+        in liftPixel convert $ PixelHSI hue (saturation * sat) val
     in fmap (min 1) . foldl' (liftA2 (+)) (PixelRGB 0 0 0) $ renderPixel <$> stars

@@ -11,7 +11,8 @@ module ConfigFile
 import Data.Aeson.Types
 import Linear
 import GHC.Generics
-import Graphics.ColorSpace
+import Graphics.Color.Model
+import Graphics.Pixel
 
 data Config = Config { scene :: Scene
                      , camera :: Camera }

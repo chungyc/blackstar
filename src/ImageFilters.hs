@@ -1,5 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE StrictData #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE Strict #-}
 
 module ImageFilters (bloom, supersample) where
@@ -9,10 +9,10 @@ import qualified Data.Vector.Unboxed.Mutable as MU
 import Data.Massiv.Array
 import Data.Massiv.Array.Manifest.Vector
 import Data.Massiv.Array.Unsafe
-import Data.Massiv.Array.IO
+import Data.Massiv.Array.IO hiding (PixelRGB)
 import Control.Monad (replicateM_)
-import Control.Applicative (liftA2)
-import Graphics.ColorSpace
+import Graphics.Color.Model
+import Graphics.Pixel
 
 ix1d :: Int -> Int -> Int -> Int
 {-# INLINE ix1d #-}
@@ -27,7 +27,7 @@ mul a = fmap (a *)
 
 boxBlur :: Int -> Int -> Image U RGB Double -> IO (Image U RGB Double)
 boxBlur !r !passes img = let
-    myDims@(h :. w) = size img
+    myDims@(Sz (h :. w)) = size img
     rows' = U.enumFromN (0 :: Int) h
     cols' = U.enumFromN (0 :: Int) w
 
@@ -75,11 +75,11 @@ boxBlur !r !passes img = let
             tmp2 <- U.freeze mv
             U.mapM_ (blur wrt rows' (flip ix1d') ixv tmp2) cols'
         out <- U.unsafeFreeze mv
-        return $ fromVector Par myDims out
+        return $ fromVector' Par myDims out
 
 bloom :: Double -> Int -> Image U RGB Double -> IO (Image U RGB Double)
 bloom strength divider img = do
-    let myDims@(_ :. w) = size img
+    let myDims@(Sz (_ :. w)) = size img
     blurred <- boxBlur (w `div` divider) 3 img
     return . makeArrayR U Par myDims
         $ \ix -> img `unsafeIndex` ix `add`
@@ -87,7 +87,7 @@ bloom strength divider img = do
 
 supersample :: Image U RGB Double -> Image U RGB Double
 supersample img = let
-    h :. w = size img
+    Sz (h :. w) = size img
     {-# INLINE pix #-}
     pix y x = img `unsafeIndex` (y :. x)
     {-# INLINE f #-}
